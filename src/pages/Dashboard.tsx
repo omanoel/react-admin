@@ -1,0 +1,20 @@
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { Icon, PageHeading, RecordName } from '../components/common'
+import { formatDate } from '../components/formatDate'
+import { entityInfo } from '../entities/entityInfo'
+import type { Entity, Store } from '../entities/types'
+
+const dashboardEntities: Entity[] = ['clients', 'users', 'applications', 'apis', 'api-keys']
+
+export function Dashboard({ store }: { store: Store }) {
+  const today = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()).toLocaleUpperCase('fr')
+  const recent = useMemo(() => dashboardEntities.flatMap((entity) => store[entity].map((item) => ({ ...item, entity }))).sort((a, b) => b.updatedOn.localeCompare(a.updatedOn)).slice(0, 5), [store])
+  return <>
+    <PageHeading eyebrow={today} title="Bonjour, Marine 👋" description="Voici ce qui se passe dans votre espace de travail." action={<Link className="button button-primary" to="/clients/add"><Icon name="plus" size={18} /> Nouveau client</Link>} />
+    <section className="welcome-banner"><div className="welcome-copy"><span className="banner-label"><span className="banner-spark">✦</span> VOTRE ESPACE, EN UN COUP D’ŒIL</span><h2>Tout est à sa place.</h2><p>Gérez vos clients, leurs équipes, leurs applications et leurs API depuis un seul endroit.</p><Link to="/clients" className="banner-link">Explorer les clients <Icon name="arrow" size={16} /></Link></div><div className="banner-art" aria-hidden="true"><div className="art-orbit orbit-one" /><div className="art-orbit orbit-two" /><div className="art-card art-card-back"><span className="art-mini-dot" /><span /><span /></div><div className="art-card art-card-front"><span className="art-card-icon"><Icon name="grid" size={22} /></span><div className="art-lines"><span /><span /></div><div className="art-card-avatar">A</div></div><span className="art-sparkle sparkle-one">✦</span><span className="art-sparkle sparkle-two">✧</span></div></section>
+    <div className="section-title-row"><div><h2>Votre activité</h2><p>Un aperçu de vos données</p></div><span className="period-label"><Icon name="calendar" size={15} /> Depuis le début</span></div>
+    <section className="stats-grid stats-grid-five">{dashboardEntities.map((entity) => <Link className="stat-card" to={`/${entity}`} key={entity}><div className="stat-card-top"><span className={`stat-icon ${entityInfo[entity].color}`}><Icon name={entityInfo[entity].icon} size={20} /></span><span className="stat-trend">Au total</span></div><div className="stat-number">{store[entity].length.toString().padStart(2, '0')}</div><div className="stat-label">{entityInfo[entity].label}</div><div className="stat-note">{entityInfo[entity].singular} enregistrés</div></Link>)}</section>
+    <section className="activity-card"><div className="activity-heading"><div><h2>Dernière activité</h2><p>Les enregistrements récemment mis à jour</p></div><Link className="text-link" to="/clients">Tout afficher <Icon name="arrow" size={15} /></Link></div><div className="activity-list">{recent.map((item) => <Link className="activity-row" to={`/${item.entity}/${item.id}`} key={`${item.entity}-${item.id}`}><span className={`activity-icon ${entityInfo[item.entity].color}`}><Icon name={entityInfo[item.entity].icon} size={17} /></span><span className="activity-name"><strong><RecordName record={item} entity={item.entity} /></strong><small>{entityInfo[item.entity].singular} · {item.id}</small></span>{'clientLinks' in item && item.clientLinks.length > 0 && <span className="activity-client">{store.clients.filter((client) => item.clientLinks.some((link) => link.clientId === client.id)).map((client) => client.name).join(', ')}</span>}{'clientId' in item && item.clientId && <span className="activity-client">{store.clients.find((client) => client.id === item.clientId)?.name}</span>}<span className="activity-date"><Icon name="clock" size={14} /> {formatDate(item.updatedOn)}</span><Icon name="chevron" size={16} /></Link>)}</div></section>
+  </>
+}
